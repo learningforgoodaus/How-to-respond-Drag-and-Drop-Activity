@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responding to Disclosures: Sorting Activity</title>
+    <style>
+        :root {
+            --primary-dark: #3E3054; /* Dark purple */
+            --primary-med: #7D6B91;  /* Medium purple */
+            --primary-light: #E6E0ED; /* Light background */
+            --correct: #4CAF50;
+            --incorrect: #D32F2F;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Helvetica font */
+            background-color: #f6f5f8;
+            color: var(--text-color);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: var(--primary-dark);
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+        }
+
+        p.instructions {
+            max-width: 700px;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            color: #444;
+            font-size: 0.95rem;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 900px; /* Reduced width */
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Source Container (Draggables) */
+        .source-container {
+            flex: 1;
+            min-width: 250px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 300px; /* Reduced height */
+        }
+
+        .source-container h3 {
+            color: var(--primary-dark);
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary-light);
+            padding-bottom: 8px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        /* Draggable Items */
+        .draggable {
+            background-color: white;
+            border: 1px solid var(--primary-light);
+            border-left: 5px solid var(--primary-med);
+            padding: 12px;
+            border-radius: 5px;
+            cursor: grab;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            user-select: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 3px;
+        }
+
+        .draggable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        .draggable:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+
+        .draggable.correct-placement {
+            border-left-color: var(--correct);
+            background-color: #e8f5e9;
+            border-right: 1px solid #c8e6c9;
+            border-top: 1px solid #c8e6c9;
+            border-bottom: 1px solid #c8e6c9;
+        }
+
+        .draggable.wrong-placement {
+            border-left-color: var(--incorrect);
+            background-color: #ffebee;
+            border-right: 1px solid #ffcdd2;
+            border-top: 1px solid #ffcdd2;
+            border-bottom: 1px solid #ffcdd2;
+        }
+
+        /* Drop Zones */
+        .drop-zones {
+            flex: 1.5;
+            min-width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .zone {
+            flex: 1;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 15px;
+            background-color: #fafafa;
+            min-height: 180px; /* Reduced height */
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .zone h3 {
+            margin-top: 0;
+            text-align: center;
+            pointer-events: none;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .zone-safe {
+            border-color: var(--primary-med);
+            background-color: #fdfbff;
+        }
+        
+        .zone-safe h3 { color: var(--primary-dark); }
+        
+        .zone-risky {
+            border-color: #bcaaa4;
+            background-color: #fffbfb;
+        }
+        
+        .zone-risky h3 { color: #8d6e63; }
+
+        .zone.drag-over {
+            background-color: #f0ebf5;
+            border-color: var(--primary-dark);
+            transform: scale(1.01);
+            box-shadow: 0 0 10px rgba(62, 48, 84, 0.2);
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Feedback Area */
+        #feedback-area {
+            margin-top: 10px;
+            font-weight: bold;
+            height: 25px;
+            text-align: center;
+            font-size: 1rem;
+        }
+        
+        button {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            margin: 0 8px;
+            transition: transform 0.2s, background-color 0.2s;
+            font-weight: 600;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button#check-btn {
+            background-color: var(--primary-dark);
+            color: white;
+            box-shadow: 0 3px 5px rgba(62, 48, 84, 0.3);
+        }
+
+        button#check-btn:hover { background-color: var(--primary-med); }
+        
+        button#reset-btn { 
+            background-color: #e0e0e0; 
+            color: #333;
+        }
+        button#reset-btn:hover { background-color: #d5d5d5; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .game-container {
+                flex-direction: column;
+            }
+            .source-container, .drop-zones {
+                width: 100%;
+                min-width: unset;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Responding to Disclosures</h1>
+    <p class="instructions">
+        Drag the actions into the correct box. Decide if the action is <strong>Helpful & Safe</strong> or <strong>Harmful & Unsafe</strong>.
+    </p>
+
+    <div class="game-container">
+        <!-- Draggable Items Source -->
+        <div class="source-container" id="source-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h3>Actions to Sort</h3>
+            
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item1" data-type="harmful">
+                Ask the partner if they used violence.
+            </div>
+            
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item2" data-type="helpful">
+                Believe them. Do not investigate.
+            </div>
+            
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item3" data-type="harmful">
+                Suggest couples counselling.
+            </div>
+            
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item4" data-type="helpful">
+                Tell them it is not their fault.
+            </div>
+            
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item5" data-type="helpful">
+                Respect their choice to stay or leave.
+            </div>
+
+        </div>
+
+        <!-- Drop Zones -->
+        <div class="drop-zones">
+            <div class="zone zone-safe" id="helpful-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-accept="helpful">
+                <h3>💜 Helpful & Safe</h3>
+            </div>
+
+            <div class="zone zone-risky" id="harmful-zone" ondrop="drop(event)" ondragover="allowDrop(event)" data-accept="harmful">
+                <h3>🚫 Harmful & Unsafe</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="check-btn" onclick="checkAnswers()">Check Answers</button>
+        <button id="reset-btn" onclick="location.reload()">Reset</button>
+        <div id="feedback-area"></div>
+    </div>
+
+    <script>
+        function allowDrop(ev) {
+            ev.preventDefault();
+            // Add visual cue for drop target
+            let target = ev.target.closest('.zone') || ev.target.closest('.source-container');
+            if (target && target.classList.contains('zone')) {
+                target.classList.add('drag-over');
+            }
+        }
+
+        // Remove drag-over style when leaving
+        document.addEventListener('dragleave', function(ev) {
+            let target = ev.target.closest('.zone');
+            if (target) {
+                // We check if we are actually leaving the zone, not just entering a child element
+                let relatedTarget = ev.relatedTarget;
+                if (!target.contains(relatedTarget)) {
+                    target.classList.remove('drag-over');
+                }
+            }
+        });
+        
+        // Also clean up drag-over on drop
+        document.addEventListener('drop', function(ev) {
+            let zones = document.querySelectorAll('.zone');
+            zones.forEach(z => z.classList.remove('drag-over'));
+        });
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+            // Slight opacity change for visual feedback
+            ev.target.style.opacity = "0.5";
+        }
+
+        // Reset opacity if drag ends without drop or after drop
+        document.addEventListener('dragend', function(ev) {
+            ev.target.style.opacity = "1";
+        });
+
+        function drop(ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var draggedElement = document.getElementById(data);
+            
+            // Ensure we drop into the zone, not on top of another child element
+            let target = ev.target;
+            
+            // If the user drops it on an H3 or another card inside the zone, find the parent zone
+            if (!target.classList.contains('zone') && !target.classList.contains('source-container')) {
+                 target = target.closest('.zone') || target.closest('.source-container');
+            }
+
+            if (target) {
+                target.classList.remove('drag-over');
+                target.appendChild(draggedElement);
+                // Clear any previous styling from checking answers if moved again
+                draggedElement.classList.remove('correct-placement', 'wrong-placement');
+                
+                // Clear feedback message if they start moving things again
+                document.getElementById('feedback-area').innerText = "";
+            }
+        }
+
+        function checkAnswers() {
+            let helpfulZone = document.getElementById('helpful-zone');
+            let harmfulZone = document.getElementById('harmful-zone');
+            let sourceZone = document.getElementById('source-zone');
+            let feedback = document.getElementById('feedback-area');
+            
+            let correctCount = 0;
+            let totalItems = 5; // Updated to 5 items
+            let itemsInSource = sourceZone.getElementsByClassName('draggable').length;
+
+            if (itemsInSource > 0) {
+                feedback.style.color = "#d32f2f";
+                feedback.innerText = "Please sort all items before checking.";
+                return;
+            }
+
+            // Check Helpful Zone
+            let helpfulItems = helpfulZone.getElementsByClassName('draggable');
+            for (let item of helpfulItems) {
+                if (item.getAttribute('data-type') === 'helpful') {
+                    item.classList.add('correct-placement');
+                    item.classList.remove('wrong-placement');
+                    correctCount++;
+                } else {
+                    item.classList.add('wrong-placement');
+                    item.classList.remove('correct-placement');
+                }
+            }
+
+            // Check Harmful Zone
+            let harmfulItems = harmfulZone.getElementsByClassName('draggable');
+            for (let item of harmfulItems) {
+                if (item.getAttribute('data-type') === 'harmful') {
+                    item.classList.add('correct-placement');
+                    item.classList.remove('wrong-placement');
+                    correctCount++;
+                } else {
+                    item.classList.add('wrong-placement');
+                    item.classList.remove('correct-placement');
+                }
+            }
+
+            if (correctCount === totalItems) {
+                feedback.style.color = "#4CAF50";
+                feedback.innerText = "Great job! You sorted them correctly.";
+            } else {
+                feedback.style.color = "#d32f2f";
+                feedback.innerText = `You got ${correctCount} out of ${totalItems} correct. Check the red items.`;
+            }
+        }
+    </script>
+</body>
+</html>
