@@ -1,193 +1,232 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-AU">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Xen Responsive Activity</title>
+    <title>Responding to Disclosures: Sorting Activity</title>
     <style>
         :root {
-            --primary: #4a90e2;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --bg: #f4f7f6;
+            --primary-dark: #3E3054;
+            --primary-med: #7D6B91;
+            --primary-light: #E6E0ED;
+            --correct: #4CAF50;
+            --incorrect: #D32F2F;
+            --text-color: #333;
         }
 
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 10px; overflow-x: hidden; }
-        
-        /* PC VIEW */
-        #pc-container { display: flex; flex-direction: column; align-items: center; gap: 15px; }
-        .drop-zones { display: flex; gap: 20px; width: 100%; justify-content: center; }
-        .zone { 
-            width: 180px; min-height: 120px; border: 2px dashed #ccc; 
-            border-radius: 10px; display: flex; flex-direction: column; align-items: center; padding: 10px;
-        }
-        .draggable { 
-            padding: 12px; background: white; border: 1px solid #ddd; 
-            border-radius: 8px; cursor: grab; margin: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f6f5f8;
+            color: var(--text-color);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
         }
 
-        /* MOBILE VIEW - Reduced Spacing */
-        #mobile-container { display: none; position: relative; height: 340px; width: 100%; margin-bottom: 0; }
+        h1 { color: var(--primary-dark); text-align: center; margin-bottom: 5px; font-size: 1.5rem; }
+        p.instructions { max-width: 700px; text-align: center; margin-bottom: 15px; line-height: 1.4; font-size: 0.95rem; }
+
+        /* --- DESKTOP VIEW --- */
+        .game-container {
+            display: flex; gap: 15px; width: 100%; max-width: 900px;
+            flex-wrap: wrap; justify-content: center;
+        }
+        .source-container {
+            flex: 1; min-width: 250px; background: white; padding: 15px;
+            border-radius: 8px; box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; gap: 8px; min-height: 300px;
+        }
+        .draggable {
+            background-color: white; border: 1px solid var(--primary-light);
+            border-left: 5px solid var(--primary-med); padding: 12px;
+            border-radius: 5px; cursor: grab; font-size: 0.9rem;
+            transition: all 0.2s; user-select: none; margin-bottom: 3px;
+        }
+        .zone {
+            flex: 1; border: 2px dashed #ccc; border-radius: 10px; padding: 15px;
+            background-color: #fafafa; min-height: 160px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .zone-safe { border-color: var(--primary-med); background-color: #fdfbff; }
+        .zone-risky { border-color: #bcaaa4; background-color: #fffbfb; }
+
+        /* --- MOBILE SWIPE VIEW --- */
+        #mobile-swipe-root { display: none; width: 100%; position: relative; height: 320px; }
         .swipe-card {
-            position: absolute; width: 75%; left: 12.5%; top: 20px; height: 200px;
-            background: white; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-            display: flex; align-items: center; justify-content: center; text-align: center;
-            padding: 15px; font-size: 1.1rem; transition: transform 0.3s ease, opacity 0.3s;
-            touch-action: none; border: 1px solid #eee; z-index: 10;
+            position: absolute; width: 85%; left: 7.5%; top: 10px; height: 180px;
+            background: white; border-radius: 12px; border-left: 8px solid var(--primary-med);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1); display: flex; align-items: center;
+            justify-content: center; text-align: center; padding: 20px; font-size: 1.1rem;
+            touch-action: none; z-index: 10;
         }
         .swipe-hint {
-            display: flex; justify-content: space-between; width: 100%; 
-            position: absolute; bottom: 5px; font-size: 0.8rem; font-weight: bold;
+            display: flex; justify-content: space-between; width: 90%;
+            position: absolute; bottom: 0; font-weight: bold; font-size: 0.8rem;
         }
 
-        /* SUMMARY VIEW */
-        #summary { display: none; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 10px; }
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .summary-col h4 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 5px; }
-        .help-list { color: var(--success); list-style: none; padding: 0; }
-        .harm-list { color: var(--danger); list-style: none; padding: 0; }
+        /* --- SUMMARY --- */
+        #summary-view {
+            display: none; background: white; width: 90%; max-width: 600px;
+            padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .summary-list { list-style: none; padding: 0; font-size: 0.9rem; }
+        .summary-list li { margin-bottom: 8px; padding-left: 20px; position: relative; }
+        .help-text { color: var(--correct); }
+        .harm-text { color: var(--incorrect); }
 
         @media (max-width: 768px) {
-            #pc-container { display: none; }
-            #mobile-container { display: block; }
+            .game-container, .controls { display: none; }
+            #mobile-swipe-root { display: block; }
         }
     </style>
 </head>
 <body>
 
-<div id="pc-container">
-    <h2>Classification Activity</h2>
-    <div id="pool" style="display:flex; flex-wrap: wrap; justify-content: center;">
-        <div class="draggable" draggable="true" id="item1" data-type="Helpful">Data Privacy</div>
-        <div class="draggable" draggable="true" id="item2" data-type="Harmful">Weak Passwords</div>
-        <div class="draggable" draggable="true" id="item3" data-type="Helpful">Encryption</div>
-    </div>
-    <div class="drop-zones">
-        <div class="zone" id="harmful-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <h3 style="color:var(--danger)">Harmful</h3>
-        </div>
-        <div class="zone" id="helpful-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <h3 style="color:var(--success)">Helpful</h3>
-        </div>
-    </div>
-</div>
+    <h1>Responding to Disclosures</h1>
+    <p class="instructions" id="main-instr">
+        Decide if the action is <strong>Helpful & Safe</strong> or <strong>Harmful & Unsafe</strong>.
+    </p>
 
-<div id="mobile-container">
-    <h3 style="text-align:center; margin-top:0;">Swipe to Classify</h3>
-    <div id="card-stack"></div>
-    <div class="swipe-hint">
-        <span style="color: var(--danger)">← HARMFUL</span>
-        <span style="color: var(--success)">HELPFUL →</span>
-    </div>
-</div>
-
-<div id="summary">
-    <h3 style="text-align:center; margin-top:0;">Activity Complete!</h3>
-    <div class="summary-grid">
-        <div class="summary-col">
-            <h4 style="color: var(--success)">Helpful</h4>
-            <ul id="list-helpful" class="help-list"></ul>
+    <div class="game-container">
+        <div class="source-container" id="source-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h3 style="text-align:center; font-size:1rem;">Actions to Sort</h3>
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item1" data-type="harmful">Ask the partner if they used violence.</div>
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item2" data-type="helpful">Believe them. Do not investigate.</div>
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item3" data-type="harmful">Suggest couples counselling.</div>
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item4" data-type="helpful">Tell them it is not their fault.</div>
+            <div class="draggable" draggable="true" ondragstart="drag(event)" id="item5" data-type="helpful">Respect their choice to stay or leave.</div>
         </div>
-        <div class="summary-col">
-            <h4 style="color: var(--danger)">Harmful</h4>
-            <ul id="list-harmful" class="harm-list"></ul>
+
+        <div class="drop-zones" style="flex:1.5; display:flex; flex-direction:column; gap:15px;">
+            <div class="zone zone-safe" id="helpful-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h3 style="color:var(--primary-dark); font-size:0.9rem;">💜 HELPFUL & SAFE</h3>
+            </div>
+            <div class="zone zone-risky" id="harmful-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h3 style="color:#8d6e63; font-size:0.9rem;">🚫 HARMFUL & UNSAFE</h3>
+            </div>
         </div>
     </div>
-    <button onclick="location.reload()" style="width:100%; padding:10px; margin-top:15px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:bold;">Restart</button>
-</div>
 
-<script>
-    const data = [
-        { id: 'item1', text: 'Regular Backups', type: 'Helpful' },
-        { id: 'item2', text: 'Sharing Passwords', type: 'Harmful' },
-        { id: 'item3', text: 'Multi-Factor Auth', type: 'Helpful' },
-        { id: 'item4', text: 'Phishing Emails', type: 'Harmful' }
-    ];
+    <div class="controls">
+        <button id="check-btn" onclick="checkAnswers()" style="background:var(--primary-dark); color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer;">Check Answers</button>
+        <div id="feedback-area" style="margin-top:10px; min-height:20px;"></div>
+    </div>
 
-    let results = { Helpful: [], Harmful: [] };
-    let cardsSwiped = 0;
+    <div id="mobile-swipe-root">
+        <div id="card-stack"></div>
+        <div class="swipe-hint">
+            <span style="color: var(--incorrect)">← HARMFUL</span>
+            <span style="color: var(--correct)">HELPFUL →</span>
+        </div>
+    </div>
 
-    // --- PC LOGIC ---
-    function allowDrop(ev) { ev.preventDefault(); }
-    function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
-    document.querySelectorAll('.draggable').forEach(item => {
-        item.addEventListener('dragstart', drag);
-    });
+    <div id="summary-view">
+        <h2 style="text-align:center; color:var(--primary-dark);">Activity Summary</h2>
+        <div style="display:flex; gap:20px;">
+            <div style="flex:1">
+                <h4 class="help-text">Helpful & Safe</h4>
+                <ul id="sum-helpful" class="summary-list"></ul>
+            </div>
+            <div style="flex:1">
+                <h4 class="harm-text">Harmful & Unsafe</h4>
+                <ul id="sum-harmful" class="summary-list"></ul>
+            </div>
+        </div>
+        <button onclick="location.reload()" style="width:100%; margin-top:20px; padding:12px; background:var(--primary-med); color:white; border:none; border-radius:5px;">Restart Activity</button>
+    </div>
 
-    function drop(ev) {
-        ev.preventDefault();
-        const dataId = ev.dataTransfer.getData("text");
-        const element = document.getElementById(dataId);
-        const zone = ev.target.closest('.zone');
-        
-        if (zone) {
-            zone.appendChild(element);
-            const type = zone.id.includes('helpful') ? 'Helpful' : 'Harmful';
-            recordResult(element.innerText, type);
-            checkComplete(document.querySelectorAll('#pool .draggable').length);
+    <script>
+        const content = [
+            { id: 'item1', text: 'Ask the partner if they used violence.', type: 'harmful' },
+            { id: 'item2', text: 'Believe them. Do not investigate.', type: 'helpful' },
+            { id: 'item3', text: 'Suggest couples counselling.', type: 'harmful' },
+            { id: 'item4', text: 'Tell them it is not their fault.', type: 'helpful' },
+            { id: 'item5', text: 'Respect their choice to stay or leave.', type: 'helpful' }
+        ];
+
+        let results = { helpful: [], harmful: [] };
+
+        // --- PC DRAG LOGIC ---
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+        function drop(ev) {
+            ev.preventDefault();
+            const id = ev.dataTransfer.getData("text");
+            const el = document.getElementById(id);
+            const targetZone = ev.target.closest('.zone') || ev.target.closest('.source-container');
+            if (targetZone) targetZone.appendChild(el);
         }
-    }
 
-    // --- MOBILE LOGIC ---
-    function loadCards() {
-        const stack = document.getElementById('card-stack');
-        data.forEach((item, index) => {
-            const card = document.createElement('div');
-            card.className = 'swipe-card';
-            card.innerText = item.text;
-            card.style.zIndex = data.length - index;
-            initSwipe(card, item.text);
-            stack.appendChild(card);
-        });
-    }
-
-    function initSwipe(el, text) {
-        let startX = 0, moveX = 0;
-
-        el.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; });
-        el.addEventListener('touchmove', (e) => {
-            moveX = e.touches[0].clientX - startX;
-            el.style.transform = `translateX(${moveX}px) rotate(${moveX / 15}deg)`;
-            el.style.backgroundColor = moveX > 50 ? '#d4edda' : (moveX < -50 ? '#f8d7da' : 'white');
-        });
-
-        el.addEventListener('touchend', () => {
-            if (Math.abs(moveX) > 100) {
-                const type = moveX > 0 ? 'Helpful' : 'Harmful';
-                el.style.transform = `translateX(${moveX > 0 ? 1000 : -1000}px)`;
-                el.style.opacity = '0';
-                recordResult(text, type);
-                cardsSwiped++;
-                if (cardsSwiped === data.length) showSummary();
-            } else {
-                el.style.transform = 'translateX(0) rotate(0)';
-                el.style.backgroundColor = 'white';
-            }
-            moveX = 0;
-        });
-    }
-
-    function recordResult(text, type) {
-        if (!results[type].includes(text)) {
-            results[type].push(text);
+        function checkAnswers() {
+            const items = document.querySelectorAll('.draggable');
+            let correct = 0;
+            items.forEach(item => {
+                const parent = item.parentElement.id;
+                const type = item.dataset.type;
+                if ((type === 'helpful' && parent === 'helpful-zone') || (type === 'harmful' && parent === 'harmful-zone')) {
+                    item.style.border = "2px solid var(--correct)";
+                    correct++;
+                    results[type].push(item.innerText);
+                } else {
+                    item.style.border = "2px solid var(--incorrect)";
+                    results[type === 'helpful' ? 'helpful' : 'harmful'].push(item.innerText);
+                }
+            });
+            if(correct === 5) showSummary();
+            else document.getElementById('feedback-area').innerText = `You got ${correct}/5 correct.`;
         }
-    }
 
-    function showSummary() {
-        document.getElementById('pc-container').style.display = 'none';
-        document.getElementById('mobile-container').style.display = 'none';
-        const summary = document.getElementById('summary');
-        summary.style.display = 'block';
+        // --- MOBILE SWIPE LOGIC ---
+        let swipedCount = 0;
+        function initMobile() {
+            const stack = document.getElementById('card-stack');
+            content.forEach((item, i) => {
+                const card = document.createElement('div');
+                card.className = 'swipe-card';
+                card.innerText = item.text;
+                card.style.zIndex = content.length - i;
+                handleSwipe(card, item);
+                stack.appendChild(card);
+            });
+        }
 
-        document.getElementById('list-helpful').innerHTML = results.Helpful.map(i => `<li>✓ ${i}</li>`).join('');
-        document.getElementById('list-harmful').innerHTML = results.Harmful.map(i => `<li>✕ ${i}</li>`).join('');
-    }
+        function handleSwipe(el, itemData) {
+            let startX = 0, moveX = 0;
+            el.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+            el.addEventListener('touchmove', e => {
+                moveX = e.touches[0].clientX - startX;
+                el.style.transform = `translateX(${moveX}px) rotate(${moveX/15}deg)`;
+            });
+            el.addEventListener('touchend', () => {
+                if (Math.abs(moveX) > 100) {
+                    const choice = moveX > 0 ? 'helpful' : 'harmful';
+                    el.style.transform = `translateX(${moveX > 0 ? 1000 : -1000}px)`;
+                    results[choice].push(itemData.text);
+                    swipedCount++;
+                    if(swipedCount === content.length) setTimeout(showSummary, 300);
+                } else {
+                    el.style.transform = 'translateX(0) rotate(0)';
+                }
+                moveX = 0;
+            });
+        }
 
-    function checkComplete(remaining) {
-        if (remaining === 0) setTimeout(showSummary, 500);
-    }
+        function showSummary() {
+            document.querySelector('.game-container').style.display = 'none';
+            document.querySelector('.controls').style.display = 'none';
+            document.getElementById('mobile-swipe-root').style.display = 'none';
+            document.getElementById('main-instr').style.display = 'none';
+            
+            const view = document.getElementById('summary-view');
+            view.style.display = 'block';
+            
+            document.getElementById('sum-helpful').innerHTML = [...new Set(results.helpful)].map(t => `<li class="help-text">✓ ${t}</li>`).join('');
+            document.getElementById('sum-harmful').innerHTML = [...new Set(results.harmful)].map(t => `<li class="harm-text">✕ ${t}</li>`).join('');
+        }
 
-    loadCards();
-</script>
+        if (window.innerWidth <= 768) initMobile();
+    </script>
 </body>
 </html>
