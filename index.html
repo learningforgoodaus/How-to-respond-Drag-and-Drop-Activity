@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Responding to Disclosures: Sorting Activity</title>
+    <title>Responding to Disclosures</title>
     <style>
         :root {
             --primary-dark: #3E3054;
@@ -19,62 +19,63 @@
             background-color: #f6f5f8;
             color: var(--text-color);
             padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
             margin: 0;
+            display: block; /* Removed flex-centering to kill bottom gap */
         }
 
-        h1 { color: var(--primary-dark); text-align: center; margin-bottom: 5px; font-size: 1.5rem; }
-        p.instructions { max-width: 700px; text-align: center; margin-bottom: 15px; line-height: 1.4; font-size: 0.95rem; }
+        h1 { color: var(--primary-dark); text-align: center; margin: 10px 0 5px 0; font-size: 1.4rem; }
+        p.instructions { max-width: 600px; text-align: center; margin: 0 auto 15px auto; line-height: 1.4; font-size: 0.9rem; }
 
-        /* --- DESKTOP VIEW --- */
+        /* --- PC VIEW --- */
         .game-container {
             display: flex; gap: 15px; width: 100%; max-width: 900px;
-            flex-wrap: wrap; justify-content: center;
+            margin: 0 auto; flex-wrap: wrap; justify-content: center;
         }
         .source-container {
             flex: 1; min-width: 250px; background: white; padding: 15px;
             border-radius: 8px; box-shadow: 0 3px 5px rgba(0,0,0,0.1);
-            display: flex; flex-direction: column; gap: 8px; min-height: 300px;
+            display: flex; flex-direction: column; gap: 8px; min-height: 250px;
         }
         .draggable {
             background-color: white; border: 1px solid var(--primary-light);
-            border-left: 5px solid var(--primary-med); padding: 12px;
-            border-radius: 5px; cursor: grab; font-size: 0.9rem;
-            transition: all 0.2s; user-select: none; margin-bottom: 3px;
+            border-left: 5px solid var(--primary-med); padding: 10px;
+            border-radius: 5px; cursor: grab; font-size: 0.85rem;
+            user-select: none;
         }
         .zone {
-            flex: 1; border: 2px dashed #ccc; border-radius: 10px; padding: 15px;
-            background-color: #fafafa; min-height: 160px; display: flex; flex-direction: column; gap: 8px;
+            flex: 1; border: 2px dashed #ccc; border-radius: 10px; padding: 10px;
+            background-color: #fafafa; min-height: 140px; display: flex; flex-direction: column; gap: 5px;
         }
-        .zone-safe { border-color: var(--primary-med); background-color: #fdfbff; }
-        .zone-risky { border-color: #bcaaa4; background-color: #fffbfb; }
 
-        /* --- MOBILE SWIPE VIEW --- */
-        #mobile-swipe-root { display: none; width: 100%; position: relative; height: 320px; }
+        /* --- MOBILE SWIPE VIEW (Tightened) --- */
+        #mobile-swipe-root { 
+            display: none; width: 100%; max-width: 400px; margin: 0 auto;
+            position: relative; height: 280px; /* Reduced height */
+        }
         .swipe-card {
-            position: absolute; width: 85%; left: 7.5%; top: 10px; height: 180px;
-            background: white; border-radius: 12px; border-left: 8px solid var(--primary-med);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1); display: flex; align-items: center;
-            justify-content: center; text-align: center; padding: 20px; font-size: 1.1rem;
+            position: absolute; width: 85%; left: 7.5%; top: 10px; height: 160px;
+            background: white; border-radius: 12px; border-left: 6px solid var(--primary-med);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center;
+            justify-content: center; text-align: center; padding: 15px; font-size: 1rem;
             touch-action: none; z-index: 10;
         }
         .swipe-hint {
-            display: flex; justify-content: space-between; width: 90%;
-            position: absolute; bottom: 0; font-weight: bold; font-size: 0.8rem;
+            display: flex; justify-content: space-between; width: 100%;
+            position: absolute; bottom: 10px; font-weight: bold; font-size: 0.75rem;
         }
 
-        /* --- SUMMARY --- */
+        /* --- SUMMARY (Adaptive) --- */
         #summary-view {
-            display: none; background: white; width: 90%; max-width: 600px;
-            padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: none; background: white; width: 95%; max-width: 600px;
+            margin: 10px auto; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .summary-list { list-style: none; padding: 0; font-size: 0.9rem; }
-        .summary-list li { margin-bottom: 8px; padding-left: 20px; position: relative; }
+        .summary-grid { display: flex; gap: 15px; }
+        .summary-list { list-style: none; padding: 0; font-size: 0.85rem; margin: 0; }
+        .summary-list li { margin-bottom: 6px; line-height: 1.2; }
         .help-text { color: var(--correct); }
         .harm-text { color: var(--incorrect); }
+
+        .controls { margin-top: 15px; text-align: center; }
 
         @media (max-width: 768px) {
             .game-container, .controls { display: none; }
@@ -91,27 +92,26 @@
 
     <div class="game-container">
         <div class="source-container" id="source-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <h3 style="text-align:center; font-size:1rem;">Actions to Sort</h3>
+            <h3 style="text-align:center; font-size:1rem; margin-top:0;">Actions to Sort</h3>
             <div class="draggable" draggable="true" ondragstart="drag(event)" id="item1" data-type="harmful">Ask the partner if they used violence.</div>
             <div class="draggable" draggable="true" ondragstart="drag(event)" id="item2" data-type="helpful">Believe them. Do not investigate.</div>
             <div class="draggable" draggable="true" ondragstart="drag(event)" id="item3" data-type="harmful">Suggest couples counselling.</div>
             <div class="draggable" draggable="true" ondragstart="drag(event)" id="item4" data-type="helpful">Tell them it is not their fault.</div>
             <div class="draggable" draggable="true" ondragstart="drag(event)" id="item5" data-type="helpful">Respect their choice to stay or leave.</div>
         </div>
-
-        <div class="drop-zones" style="flex:1.5; display:flex; flex-direction:column; gap:15px;">
+        <div class="drop-zones" style="flex:1.5; display:flex; flex-direction:column; gap:10px;">
             <div class="zone zone-safe" id="helpful-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <h3 style="color:var(--primary-dark); font-size:0.9rem;">💜 HELPFUL & SAFE</h3>
+                <h3 style="color:var(--primary-dark); font-size:0.85rem; margin:0;">💜 HELPFUL & SAFE</h3>
             </div>
             <div class="zone zone-risky" id="harmful-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <h3 style="color:#8d6e63; font-size:0.9rem;">🚫 HARMFUL & UNSAFE</h3>
+                <h3 style="color:#8d6e63; font-size:0.85rem; margin:0;">🚫 HARMFUL & UNSAFE</h3>
             </div>
         </div>
     </div>
 
     <div class="controls">
-        <button id="check-btn" onclick="checkAnswers()" style="background:var(--primary-dark); color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer;">Check Answers</button>
-        <div id="feedback-area" style="margin-top:10px; min-height:20px;"></div>
+        <button id="check-btn" onclick="checkAnswers()" style="background:var(--primary-dark); color:white; padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Check Answers</button>
+        <div id="feedback-area" style="margin-top:10px; font-size:0.9rem;"></div>
     </div>
 
     <div id="mobile-swipe-root">
@@ -123,18 +123,18 @@
     </div>
 
     <div id="summary-view">
-        <h2 style="text-align:center; color:var(--primary-dark);">Activity Summary</h2>
-        <div style="display:flex; gap:20px;">
+        <h3 style="text-align:center; color:var(--primary-dark); margin-top:0;">Results Summary</h3>
+        <div class="summary-grid">
             <div style="flex:1">
-                <h4 class="help-text">Helpful & Safe</h4>
+                <h4 class="help-text" style="margin:0 0 8px 0; font-size:0.9rem;">Helpful & Safe</h4>
                 <ul id="sum-helpful" class="summary-list"></ul>
             </div>
             <div style="flex:1">
-                <h4 class="harm-text">Harmful & Unsafe</h4>
+                <h4 class="harm-text" style="margin:0 0 8px 0; font-size:0.9rem;">Harmful & Unsafe</h4>
                 <ul id="sum-harmful" class="summary-list"></ul>
             </div>
         </div>
-        <button onclick="location.reload()" style="width:100%; margin-top:20px; padding:12px; background:var(--primary-med); color:white; border:none; border-radius:5px;">Restart Activity</button>
+        <button onclick="location.reload()" style="width:100%; margin-top:15px; padding:10px; background:var(--primary-med); color:white; border:none; border-radius:5px; font-weight:bold;">Restart Activity</button>
     </div>
 
     <script>
@@ -162,20 +162,24 @@
         function checkAnswers() {
             const items = document.querySelectorAll('.draggable');
             let correct = 0;
+            results = { helpful: [], harmful: [] }; // Reset for re-check
             items.forEach(item => {
                 const parent = item.parentElement.id;
                 const type = item.dataset.type;
                 if ((type === 'helpful' && parent === 'helpful-zone') || (type === 'harmful' && parent === 'harmful-zone')) {
-                    item.style.border = "2px solid var(--correct)";
+                    item.style.border = "1px solid var(--correct)";
                     correct++;
-                    results[type].push(item.innerText);
                 } else {
-                    item.style.border = "2px solid var(--incorrect)";
-                    results[type === 'helpful' ? 'helpful' : 'harmful'].push(item.innerText);
+                    item.style.border = "1px solid var(--incorrect)";
+                }
+                // Categorize for summary based on current location
+                if(parent !== 'source-zone') {
+                    const finalCat = parent === 'helpful-zone' ? 'helpful' : 'harmful';
+                    results[finalCat].push(item.innerText);
                 }
             });
             if(correct === 5) showSummary();
-            else document.getElementById('feedback-area').innerText = `You got ${correct}/5 correct.`;
+            else document.getElementById('feedback-area').innerText = `Sorted correctly: ${correct}/5`;
         }
 
         // --- MOBILE SWIPE LOGIC ---
@@ -200,9 +204,9 @@
                 el.style.transform = `translateX(${moveX}px) rotate(${moveX/15}deg)`;
             });
             el.addEventListener('touchend', () => {
-                if (Math.abs(moveX) > 100) {
+                if (Math.abs(moveX) > 80) { // Slightly easier threshold
                     const choice = moveX > 0 ? 'helpful' : 'harmful';
-                    el.style.transform = `translateX(${moveX > 0 ? 1000 : -1000}px)`;
+                    el.style.transform = `translateX(${moveX > 0 ? 800 : -800}px)`;
                     results[choice].push(itemData.text);
                     swipedCount++;
                     if(swipedCount === content.length) setTimeout(showSummary, 300);
@@ -214,16 +218,17 @@
         }
 
         function showSummary() {
-            document.querySelector('.game-container').style.display = 'none';
-            document.querySelector('.controls').style.display = 'none';
-            document.getElementById('mobile-swipe-root').style.display = 'none';
-            document.getElementById('main-instr').style.display = 'none';
+            // Hide containers
+            const pc = document.querySelector('.game-container');
+            const mobile = document.getElementById('mobile-swipe-root');
+            const controls = document.querySelector('.controls');
+            if(pc) pc.style.display = 'none';
+            if(mobile) mobile.style.display = 'none';
+            if(controls) controls.style.display = 'none';
             
-            const view = document.getElementById('summary-view');
-            view.style.display = 'block';
-            
-            document.getElementById('sum-helpful').innerHTML = [...new Set(results.helpful)].map(t => `<li class="help-text">✓ ${t}</li>`).join('');
-            document.getElementById('sum-harmful').innerHTML = [...new Set(results.harmful)].map(t => `<li class="harm-text">✕ ${t}</li>`).join('');
+            document.getElementById('summary-view').style.display = 'block';
+            document.getElementById('sum-helpful').innerHTML = results.helpful.map(t => `<li class="help-text">✓ ${t}</li>`).join('');
+            document.getElementById('sum-harmful').innerHTML = results.harmful.map(t => `<li class="harm-text">✕ ${t}</li>`).join('');
         }
 
         if (window.innerWidth <= 768) initMobile();
